@@ -233,7 +233,7 @@
       .then(function (photos) {
         currentPhotos = photos;
         document.getElementById("photo-count").textContent = pluralizePhotos(photos.length);
-        if (!adminMode) {
+        if (!adminMode && !heroLayoutEnabled) {
           applyTileSizeSliderBounds();
         }
         renderCountryFilterList();
@@ -318,7 +318,16 @@
       resetAllFilters();
     }
 
-    heroLayoutEnabled = photoMode;
+    if (photoMode !== heroLayoutEnabled) {
+      heroLayoutEnabled = photoMode;
+      if (!adminMode) {
+        if (heroLayoutEnabled) {
+          document.documentElement.style.removeProperty("--tile-size");
+        } else {
+          applyTileSizeSliderBounds();
+        }
+      }
+    }
     refreshDisplay();
   }
 
@@ -2215,7 +2224,7 @@
     initDeleteFoldersModal();
     initPlatformConfigPanel();
     loadPlatformSettings().then(function () {
-      if (platformSettings.mapEnabled) openMapView();
+      if (platformSettings.siteMode !== "photo" && platformSettings.mapEnabled) openMapView();
     });
     loadPhotos();
     loadTags();
