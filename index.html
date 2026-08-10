@@ -9,7 +9,10 @@
 <body>
 <header class="topbar">
   <div class="topbar__heading">
-    <span class="topbar__title">Travel.avalax.eu</span>
+    <span id="site-mode-badge" class="site-mode-badge" hidden>
+      <svg id="site-mode-badge-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"></svg>
+      <span id="site-mode-badge-text"></span>
+    </span>
     <span id="photo-count" class="topbar__count"></span>
   </div>
   <div class="topbar__actions">
@@ -102,10 +105,6 @@
         <button id="platform-config-save" class="btn btn--primary">uložit</button>
       </div>
     </div>
-    <span id="site-mode-badge" class="site-mode-badge" hidden>
-      <svg id="site-mode-badge-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"></svg>
-      <span id="site-mode-badge-text"></span>
-    </span>
   </div>
 </header>
 

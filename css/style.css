@@ -46,13 +46,8 @@ body {
 
 .topbar__heading {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
-}
-
-.topbar__title {
-  font-size: 18px;
-  font-weight: 600;
 }
 
 .topbar__count {
@@ -96,7 +91,6 @@ body.site-mode-photo .topbar__actions {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  margin-left: auto;
 }
 
 .site-mode-badge[hidden] {
