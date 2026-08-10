@@ -305,6 +305,10 @@
     document.getElementById("filter-toggle").closest(".filter-wrap").hidden = !tagsOn;
     document.getElementById("country-filter-toggle").closest(".filter-wrap").hidden = !countryOn;
 
+    document.getElementById("import-btn").setAttribute("aria-label", photoMode ? "Nahrát z adresáře photos/" : "Nahrát z adresáře");
+    document.getElementById("import-btn").setAttribute("title", photoMode ? "Nahrát z adresáře photos/" : "Nahrát z adresáře");
+    document.getElementById("delete-folders-btn").hidden = photoMode;
+
     if (!mapOn && !document.getElementById("map-view").hidden) {
       closeMapView();
     }
@@ -2078,8 +2082,95 @@
       });
   }
 
+  function setIncomingPhotosImportButtonState(succeeded) {
+    var btn = document.getElementById("incoming-photos-import");
+    btn.textContent = succeeded ? "zavřít" : "importovat";
+    btn.dataset.done = succeeded ? "1" : "";
+  }
+
+  function openIncomingPhotosPicker() {
+    document.getElementById("incoming-photos-delete-originals").checked = true;
+    document.getElementById("incoming-photos-status").hidden = true;
+    document.getElementById("incoming-photos-count").textContent = "Načítám...";
+    setIncomingPhotosImportButtonState(false);
+    document.getElementById("incoming-photos-picker").hidden = false;
+
+    adminFetch("api/incoming-photos.php", { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("Nepodařilo se načíst složku photos/");
+        return res.json();
+      })
+      .then(function (result) {
+        document.getElementById("incoming-photos-count").textContent =
+          result.count > 0 ? "Nalezeno " + pluralizePhotos(result.count) + " ve složce photos/." : "Ve složce photos/ nejsou žádné fotky.";
+      })
+      .catch(function () {
+        document.getElementById("incoming-photos-count").textContent = "Nepodařilo se načíst složku photos/.";
+      });
+  }
+
+  function closeIncomingPhotosPicker() {
+    document.getElementById("incoming-photos-picker").hidden = true;
+  }
+
+  function submitIncomingPhotosImport() {
+    if (document.getElementById("incoming-photos-import").dataset.done === "1") {
+      closeIncomingPhotosPicker();
+      return;
+    }
+
+    var deleteOriginals = document.getElementById("incoming-photos-delete-originals").checked;
+    var statusEl = document.getElementById("incoming-photos-status");
+    statusEl.hidden = false;
+    statusEl.className = "form-error";
+    statusEl.textContent = "Importuji...";
+
+    adminFetch("api/import-incoming-photos.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deleteOriginals: deleteOriginals }),
+    })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          return { ok: res.ok, data: data };
+        });
+      })
+      .then(function (result) {
+        if (!result.ok) {
+          statusEl.className = "form-error";
+          statusEl.textContent = result.data.error || "Import selhal";
+          return;
+        }
+        statusEl.className = "form-error form-status--ok";
+        statusEl.textContent =
+          "Importováno: " +
+          result.data.imported +
+          (result.data.skipped.length ? ", přeskočeno: " + result.data.skipped.length : "");
+        setIncomingPhotosImportButtonState(true);
+        loadPhotos();
+      })
+      .catch(function () {
+        statusEl.className = "form-error";
+        statusEl.textContent = "Import selhal. Zkuste to prosím znovu.";
+      });
+  }
+
+  function initIncomingPhotosPicker() {
+    document.getElementById("incoming-photos-cancel").addEventListener("click", closeIncomingPhotosPicker);
+    document.getElementById("incoming-photos-import").addEventListener("click", submitIncomingPhotosImport);
+    document.getElementById("incoming-photos-picker").addEventListener("click", function (event) {
+      if (event.target.id === "incoming-photos-picker") closeIncomingPhotosPicker();
+    });
+  }
+
   function initIncomingPicker() {
-    document.getElementById("import-btn").addEventListener("click", openIncomingPicker);
+    document.getElementById("import-btn").addEventListener("click", function () {
+      if (platformSettings.siteMode === "photo") {
+        openIncomingPhotosPicker();
+      } else {
+        openIncomingPicker();
+      }
+    });
     document.getElementById("incoming-cancel").addEventListener("click", closeIncomingPicker);
     document.getElementById("incoming-country-btn").addEventListener("click", function () {
       openCountryPicker({
@@ -2221,6 +2312,7 @@
     initActiveFiltersBar();
     initAdminLogin();
     initIncomingPicker();
+    initIncomingPhotosPicker();
     initDeleteFoldersModal();
     initPlatformConfigPanel();
     loadPlatformSettings().then(function () {

@@ -28,6 +28,7 @@ jobs:
             uploads/originals/**
             uploads/thumbs/**
             actions/**
+            photos/**
             data/photos.json
             data/tags.json
             data/events.json

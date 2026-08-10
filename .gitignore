@@ -8,6 +8,8 @@ uploads/thumbs/*
 !uploads/thumbs/.gitkeep
 actions/*
 !actions/.gitkeep
+photos/*
+!photos/.gitkeep
 data/photos.json
 data/tags.json
 data/events.json

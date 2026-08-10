@@ -239,6 +239,25 @@
   </div>
 </div>
 
+<div id="incoming-photos-picker" class="modal" hidden>
+  <div class="modal__panel">
+    <h2 class="modal__title">Import fotek z adresáře photos/</h2>
+    <p id="incoming-photos-count" class="filter-panel__empty"></p>
+
+    <label class="checkbox-row">
+      <input id="incoming-photos-delete-originals" type="checkbox" checked>
+      smazat originály z FTP po importu
+    </label>
+
+    <p id="incoming-photos-status" class="form-error" hidden></p>
+
+    <div class="modal__actions">
+      <button id="incoming-photos-cancel" class="btn">zrušit</button>
+      <button id="incoming-photos-import" class="btn btn--primary">importovat</button>
+    </div>
+  </div>
+</div>
+
 <div id="delete-folders-modal" class="modal" hidden>
   <div class="modal__panel">
     <h2 class="modal__title">Smazat adresáře</h2>
