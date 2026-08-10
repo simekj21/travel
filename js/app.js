@@ -22,6 +22,7 @@
   var countryPickerSelectedCode = null;
   var countryPickerConfirmCallback = null;
   var countryPickerCancelCallback = null;
+  var platformSettings = { mapEnabled: true, eventsEnabled: true, tagsEnabled: true, countryFilterEnabled: true };
 
   function initTheme() {
     var saved = localStorage.getItem(THEME_KEY);
@@ -275,6 +276,41 @@
         allEvents = [];
         renderEventsList();
       });
+  }
+
+  function loadPlatformSettings() {
+    return fetch("api/settings.php", { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("Nepodařilo se načíst nastavení");
+        return res.json();
+      })
+      .then(function (settings) {
+        platformSettings = settings;
+        applyPlatformSettings();
+      })
+      .catch(function () {
+        applyPlatformSettings();
+      });
+  }
+
+  function applyPlatformSettings() {
+    document.getElementById("map-toggle").hidden = !platformSettings.mapEnabled;
+    document.getElementById("events-toggle").closest(".filter-wrap").hidden = !platformSettings.eventsEnabled;
+    document.getElementById("filter-toggle").closest(".filter-wrap").hidden = !platformSettings.tagsEnabled;
+    document.getElementById("country-filter-toggle").closest(".filter-wrap").hidden = !platformSettings.countryFilterEnabled;
+
+    if (!platformSettings.mapEnabled && !document.getElementById("map-view").hidden) {
+      closeMapView();
+    }
+    if (!platformSettings.eventsEnabled && activeEventFilterId) {
+      resetAllFilters();
+    }
+    if (!platformSettings.tagsEnabled && activeFilterTagIds.size > 0) {
+      resetAllFilters();
+    }
+    if (!platformSettings.countryFilterEnabled && activeCountryFilterCode) {
+      resetAllFilters();
+    }
   }
 
   function getFilteredPhotos() {
@@ -784,12 +820,6 @@
       }
     });
 
-    document.getElementById("platform-config-toggle").addEventListener("click", function () {
-      if (!adminToken) {
-        openAdminLogin();
-      }
-    });
-
     document.getElementById("bulk-clear").addEventListener("click", clearSelection);
     document.getElementById("bulk-delete").addEventListener("click", bulkDeletePhotos);
     document.getElementById("bulk-tag").addEventListener("click", openTagPicker);
@@ -911,6 +941,81 @@
         toggle.setAttribute("aria-expanded", "false");
       }
     });
+  }
+
+  function populatePlatformConfigForm() {
+    document.getElementById("config-map-enabled").checked = platformSettings.mapEnabled;
+    document.getElementById("config-events-enabled").checked = platformSettings.eventsEnabled;
+    document.getElementById("config-tags-enabled").checked = platformSettings.tagsEnabled;
+    document.getElementById("config-country-filter-enabled").checked = platformSettings.countryFilterEnabled;
+    document.getElementById("platform-config-status").hidden = true;
+  }
+
+  function savePlatformSettings() {
+    var payload = {
+      mapEnabled: document.getElementById("config-map-enabled").checked,
+      eventsEnabled: document.getElementById("config-events-enabled").checked,
+      tagsEnabled: document.getElementById("config-tags-enabled").checked,
+      countryFilterEnabled: document.getElementById("config-country-filter-enabled").checked,
+    };
+    var status = document.getElementById("platform-config-status");
+
+    adminFetch("api/settings.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          return { ok: res.ok, data: data };
+        });
+      })
+      .then(function (result) {
+        if (!result.ok) {
+          status.textContent = result.data.error || "Uložení selhalo";
+          status.hidden = false;
+          return;
+        }
+        platformSettings = result.data;
+        applyPlatformSettings();
+        document.getElementById("platform-config-panel").hidden = true;
+        document.getElementById("platform-config-toggle").setAttribute("aria-expanded", "false");
+      })
+      .catch(function () {
+        status.textContent = "Uložení selhalo. Zkuste to prosím znovu.";
+        status.hidden = false;
+      });
+  }
+
+  function initPlatformConfigPanel() {
+    var toggle = document.getElementById("platform-config-toggle");
+    var panel = document.getElementById("platform-config-panel");
+    registerFilterPanelToggle(toggle, panel);
+
+    toggle.addEventListener("click", function (event) {
+      if (!adminToken) {
+        openAdminLogin();
+        return;
+      }
+      event.stopPropagation();
+      var willOpen = panel.hidden;
+      if (willOpen) closeOtherFilterPanels(panel);
+      panel.hidden = !willOpen;
+      if (willOpen) {
+        populatePlatformConfigForm();
+        clampPanelToViewport(panel);
+      }
+      toggle.setAttribute("aria-expanded", String(willOpen));
+    });
+
+    document.addEventListener("click", function (event) {
+      if (!panel.hidden && !panel.contains(event.target) && event.target !== toggle) {
+        panel.hidden = true;
+        toggle.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    document.getElementById("platform-config-save").addEventListener("click", savePlatformSettings);
   }
 
   function renderTagPickerChips() {
@@ -2004,13 +2109,16 @@
     initEventPicker();
     initCountryFilterPanel();
     initMapView();
-    openMapView();
     initCountryPicker();
     initBulkCountry();
     initActiveFiltersBar();
     initAdminLogin();
     initIncomingPicker();
     initDeleteFoldersModal();
+    initPlatformConfigPanel();
+    loadPlatformSettings().then(function () {
+      if (platformSettings.mapEnabled) openMapView();
+    });
     loadPhotos();
     loadTags();
     loadEvents();

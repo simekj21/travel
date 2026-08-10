@@ -31,3 +31,4 @@ jobs:
             data/photos.json
             data/tags.json
             data/events.json
+            data/settings.json
