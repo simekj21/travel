@@ -85,6 +85,10 @@ body {
   border-color: var(--text-muted);
 }
 
+.icon-btn[hidden] {
+  display: none;
+}
+
 .icon-btn--danger {
   color: #b3261e;
   border-color: #b3261e;
@@ -177,6 +181,12 @@ body {
   background: #f3b0ab;
   border-color: #f3b0ab;
   color: #5c1a1a;
+}
+
+.icon-btn--admin-authenticated {
+  background: #bcdcf5;
+  border-color: #bcdcf5;
+  color: #1a4a6e;
 }
 
 .form-error {
