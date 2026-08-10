@@ -121,6 +121,9 @@
   function updateAdminAuthHint() {
     document.getElementById("admin-toggle").classList.toggle("icon-btn--admin-authenticated", !!adminToken && !adminMode);
     document.getElementById("platform-config-toggle").classList.toggle("icon-btn--admin-authenticated", !!adminToken);
+    document.getElementById("events-toggle").classList.toggle("icon-btn--admin-hint", !!adminToken);
+    document.getElementById("events-add-btn").hidden = !adminToken;
+    renderEventsList();
   }
 
   function hintLoginViaGear() {
@@ -136,14 +139,11 @@
     document.getElementById("admin-tools").hidden = false;
     document.getElementById("admin-toggle").classList.add("icon-btn--admin-on");
     document.getElementById("admin-toggle").setAttribute("aria-expanded", "true");
-    document.getElementById("events-toggle").classList.add("icon-btn--admin-hint");
-    document.getElementById("events-add-btn").hidden = false;
     document.getElementById("tile-size-toggle").disabled = true;
     document.getElementById("tile-size-panel").hidden = true;
     document.documentElement.style.removeProperty("--tile-size");
     updateAdminAuthHint();
     refreshDisplay();
-    renderEventsList();
   }
 
   function exitAdminMode() {
@@ -152,15 +152,12 @@
     document.getElementById("admin-tools").hidden = true;
     document.getElementById("admin-toggle").classList.remove("icon-btn--admin-on");
     document.getElementById("admin-toggle").setAttribute("aria-expanded", "false");
-    document.getElementById("events-toggle").classList.remove("icon-btn--admin-hint");
-    document.getElementById("events-add-btn").hidden = true;
     document.getElementById("tile-size-toggle").disabled = false;
     applyTileSizeSliderBounds();
     selectedIds.clear();
     updateBulkActions();
     updateAdminAuthHint();
     refreshDisplay();
-    renderEventsList();
   }
 
   function openAdminLogin() {
@@ -1292,7 +1289,7 @@
       });
       row.appendChild(selectBtn);
 
-      if (adminMode) {
+      if (adminToken) {
         var editBtn = document.createElement("button");
         editBtn.type = "button";
         editBtn.className = "icon-btn";
