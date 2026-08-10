@@ -117,19 +117,30 @@
     applyTileSize(value);
   }
 
+  function updateAdminAuthHint() {
+    document.getElementById("admin-toggle").classList.toggle("icon-btn--admin-authenticated", !!adminToken && !adminMode);
+    document.getElementById("platform-config-toggle").classList.toggle("icon-btn--admin-authenticated", !!adminToken);
+  }
+
+  function hintLoginViaGear() {
+    var gear = document.getElementById("platform-config-toggle");
+    gear.classList.remove("icon-btn--shake");
+    void gear.offsetWidth;
+    gear.classList.add("icon-btn--shake");
+  }
+
   function enterAdminMode() {
     adminMode = true;
     document.getElementById("dropzone").hidden = false;
     document.getElementById("admin-tools").hidden = false;
-    document.getElementById("admin-toggle").classList.remove("icon-btn--admin-authenticated");
     document.getElementById("admin-toggle").classList.add("icon-btn--admin-on");
     document.getElementById("admin-toggle").setAttribute("aria-expanded", "true");
-    document.getElementById("platform-config-toggle").classList.add("icon-btn--admin-authenticated");
     document.getElementById("events-toggle").classList.add("icon-btn--admin-hint");
     document.getElementById("events-add-btn").hidden = false;
     document.getElementById("tile-size-toggle").disabled = true;
     document.getElementById("tile-size-panel").hidden = true;
     document.documentElement.style.removeProperty("--tile-size");
+    updateAdminAuthHint();
     refreshDisplay();
     renderEventsList();
   }
@@ -139,15 +150,14 @@
     document.getElementById("dropzone").hidden = true;
     document.getElementById("admin-tools").hidden = true;
     document.getElementById("admin-toggle").classList.remove("icon-btn--admin-on");
-    document.getElementById("admin-toggle").classList.toggle("icon-btn--admin-authenticated", !!adminToken);
     document.getElementById("admin-toggle").setAttribute("aria-expanded", "false");
-    document.getElementById("platform-config-toggle").classList.toggle("icon-btn--admin-authenticated", !!adminToken);
     document.getElementById("events-toggle").classList.remove("icon-btn--admin-hint");
     document.getElementById("events-add-btn").hidden = true;
     document.getElementById("tile-size-toggle").disabled = false;
     applyTileSizeSliderBounds();
     selectedIds.clear();
     updateBulkActions();
+    updateAdminAuthHint();
     refreshDisplay();
     renderEventsList();
   }
@@ -186,7 +196,7 @@
         adminToken = result.data.token;
         localStorage.setItem(ADMIN_TOKEN_KEY, adminToken);
         closeAdminLogin();
-        enterAdminMode();
+        updateAdminAuthHint();
       })
       .catch(function () {
         document.getElementById("admin-pin-error").textContent = "Ověření selhalo. Zkuste to prosím znovu.";
@@ -770,6 +780,12 @@
       if (adminToken) {
         enterAdminMode();
       } else {
+        hintLoginViaGear();
+      }
+    });
+
+    document.getElementById("platform-config-toggle").addEventListener("click", function () {
+      if (!adminToken) {
         openAdminLogin();
       }
     });
@@ -1975,10 +1991,7 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     initTheme();
-    if (adminToken) {
-      document.getElementById("admin-toggle").classList.add("icon-btn--admin-authenticated");
-      document.getElementById("platform-config-toggle").classList.add("icon-btn--admin-authenticated");
-    }
+    updateAdminAuthHint();
     document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
     initLightboxControls();
     initUpload();
