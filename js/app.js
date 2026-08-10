@@ -293,8 +293,22 @@
       });
   }
 
+  function updateSiteModeVisuals(photoMode) {
+    document.body.classList.toggle("site-mode-travel", !photoMode);
+    document.body.classList.toggle("site-mode-photo", photoMode);
+
+    var badge = document.getElementById("site-mode-badge");
+    badge.hidden = false;
+    badge.className = "site-mode-badge " + (photoMode ? "site-mode-badge--photo" : "site-mode-badge--travel");
+    document.getElementById("site-mode-badge-text").textContent = photoMode ? "Photo" : "Travel";
+    document.getElementById("site-mode-badge-icon").innerHTML = photoMode
+      ? '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>'
+      : '<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>';
+  }
+
   function applyPlatformSettings() {
     var photoMode = platformSettings.siteMode === "photo";
+    updateSiteModeVisuals(photoMode);
     var mapOn = !photoMode && platformSettings.mapEnabled;
     var eventsOn = !photoMode && platformSettings.eventsEnabled;
     var tagsOn = !photoMode && platformSettings.tagsEnabled;
