@@ -124,6 +124,7 @@
     document.getElementById("admin-toggle").classList.remove("icon-btn--admin-authenticated");
     document.getElementById("admin-toggle").classList.add("icon-btn--admin-on");
     document.getElementById("admin-toggle").setAttribute("aria-expanded", "true");
+    document.getElementById("platform-config-toggle").classList.add("icon-btn--admin-authenticated");
     document.getElementById("events-toggle").classList.add("icon-btn--admin-hint");
     document.getElementById("events-add-btn").hidden = false;
     document.getElementById("tile-size-toggle").disabled = true;
@@ -140,6 +141,7 @@
     document.getElementById("admin-toggle").classList.remove("icon-btn--admin-on");
     document.getElementById("admin-toggle").classList.toggle("icon-btn--admin-authenticated", !!adminToken);
     document.getElementById("admin-toggle").setAttribute("aria-expanded", "false");
+    document.getElementById("platform-config-toggle").classList.toggle("icon-btn--admin-authenticated", !!adminToken);
     document.getElementById("events-toggle").classList.remove("icon-btn--admin-hint");
     document.getElementById("events-add-btn").hidden = true;
     document.getElementById("tile-size-toggle").disabled = false;
@@ -1975,6 +1977,7 @@
     initTheme();
     if (adminToken) {
       document.getElementById("admin-toggle").classList.add("icon-btn--admin-authenticated");
+      document.getElementById("platform-config-toggle").classList.add("icon-btn--admin-authenticated");
     }
     document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
     initLightboxControls();
