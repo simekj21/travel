@@ -541,7 +541,7 @@
     lightboxState.photos = photos;
     lightboxState.index = index;
     updateLightboxImage();
-    document.getElementById("lb-delete").hidden = !adminMode;
+    document.getElementById("lb-delete").hidden = !adminToken;
     document.getElementById("lightbox").hidden = false;
     document.body.style.overflow = "hidden";
   }
