@@ -23,7 +23,9 @@
   var countryPickerSelectedCode = null;
   var countryPickerConfirmCallback = null;
   var countryPickerCancelCallback = null;
-  var platformSettings = { mapEnabled: true, eventsEnabled: true, tagsEnabled: true, countryFilterEnabled: true };
+  var platformSettings = { siteMode: "travel", mapEnabled: true, eventsEnabled: true, tagsEnabled: true, countryFilterEnabled: true };
+  var heroLayoutEnabled = false;
+  var HERO_TILE_COUNT = 4;
 
   function initTheme() {
     var saved = localStorage.getItem(THEME_KEY);
@@ -292,23 +294,32 @@
   }
 
   function applyPlatformSettings() {
-    document.getElementById("map-toggle").hidden = !platformSettings.mapEnabled;
-    document.getElementById("events-toggle").closest(".filter-wrap").hidden = !platformSettings.eventsEnabled;
-    document.getElementById("filter-toggle").closest(".filter-wrap").hidden = !platformSettings.tagsEnabled;
-    document.getElementById("country-filter-toggle").closest(".filter-wrap").hidden = !platformSettings.countryFilterEnabled;
+    var photoMode = platformSettings.siteMode === "photo";
+    var mapOn = !photoMode && platformSettings.mapEnabled;
+    var eventsOn = !photoMode && platformSettings.eventsEnabled;
+    var tagsOn = !photoMode && platformSettings.tagsEnabled;
+    var countryOn = !photoMode && platformSettings.countryFilterEnabled;
 
-    if (!platformSettings.mapEnabled && !document.getElementById("map-view").hidden) {
+    document.getElementById("map-toggle").hidden = !mapOn;
+    document.getElementById("events-toggle").closest(".filter-wrap").hidden = !eventsOn;
+    document.getElementById("filter-toggle").closest(".filter-wrap").hidden = !tagsOn;
+    document.getElementById("country-filter-toggle").closest(".filter-wrap").hidden = !countryOn;
+
+    if (!mapOn && !document.getElementById("map-view").hidden) {
       closeMapView();
     }
-    if (!platformSettings.eventsEnabled && activeEventFilterId) {
+    if (!eventsOn && activeEventFilterId) {
       resetAllFilters();
     }
-    if (!platformSettings.tagsEnabled && activeFilterTagIds.size > 0) {
+    if (!tagsOn && activeFilterTagIds.size > 0) {
       resetAllFilters();
     }
-    if (!platformSettings.countryFilterEnabled && activeCountryFilterCode) {
+    if (!countryOn && activeCountryFilterCode) {
       resetAllFilters();
     }
+
+    heroLayoutEnabled = photoMode;
+    refreshDisplay();
   }
 
   function getFilteredPhotos() {
@@ -431,7 +442,7 @@
 
     photos.forEach(function (photo, index) {
       var tile = document.createElement("div");
-      tile.className = "tile";
+      tile.className = "tile" + (heroLayoutEnabled && index < HERO_TILE_COUNT ? " tile--hero" : "");
 
       var openBtn = document.createElement("button");
       openBtn.className = "tile__open";
@@ -941,16 +952,30 @@
     });
   }
 
+  function updatePlatformConfigModeUI() {
+    var isPhoto = document.getElementById("config-mode-photo").checked;
+    document.getElementById("platform-config-mode-hint").hidden = !isPhoto;
+    ["config-map-enabled", "config-events-enabled", "config-tags-enabled", "config-country-filter-enabled"].forEach(function (id) {
+      var checkbox = document.getElementById(id);
+      checkbox.disabled = isPhoto;
+      checkbox.closest(".platform-config-option").classList.toggle("platform-config-option--disabled", isPhoto);
+    });
+  }
+
   function populatePlatformConfigForm() {
+    document.getElementById("config-mode-travel").checked = platformSettings.siteMode !== "photo";
+    document.getElementById("config-mode-photo").checked = platformSettings.siteMode === "photo";
     document.getElementById("config-map-enabled").checked = platformSettings.mapEnabled;
     document.getElementById("config-events-enabled").checked = platformSettings.eventsEnabled;
     document.getElementById("config-tags-enabled").checked = platformSettings.tagsEnabled;
     document.getElementById("config-country-filter-enabled").checked = platformSettings.countryFilterEnabled;
     document.getElementById("platform-config-status").hidden = true;
+    updatePlatformConfigModeUI();
   }
 
   function savePlatformSettings() {
     var payload = {
+      siteMode: document.getElementById("config-mode-photo").checked ? "photo" : "travel",
       mapEnabled: document.getElementById("config-map-enabled").checked,
       eventsEnabled: document.getElementById("config-events-enabled").checked,
       tagsEnabled: document.getElementById("config-tags-enabled").checked,
@@ -1014,6 +1039,9 @@
     });
 
     document.getElementById("platform-config-save").addEventListener("click", savePlatformSettings);
+
+    document.getElementById("config-mode-travel").addEventListener("change", updatePlatformConfigModeUI);
+    document.getElementById("config-mode-photo").addEventListener("change", updatePlatformConfigModeUI);
   }
 
   function renderTagPickerChips() {

@@ -14,6 +14,7 @@ function json_response($data, int $status = 200): void {
 
 function default_settings(): array {
     return [
+        'siteMode' => 'travel',
         'mapEnabled' => true,
         'eventsEnabled' => true,
         'tagsEnabled' => true,
@@ -57,7 +58,15 @@ if (!is_array($input)) {
 }
 
 $settings = load_settings($settingsFile);
+
+if (array_key_exists('siteMode', $input) && in_array($input['siteMode'], ['travel', 'photo'], true)) {
+    $settings['siteMode'] = $input['siteMode'];
+}
+
 foreach (array_keys(default_settings()) as $key) {
+    if ($key === 'siteMode') {
+        continue;
+    }
     if (array_key_exists($key, $input)) {
         $settings[$key] = (bool) $input[$key];
     }
