@@ -11,6 +11,7 @@
   var activeFilterTagIds = new Set();
   var tagPickerSelection = new Set();
   var allEvents = [];
+  var selectedEventIds = new Set();
   var activeEventFilterId = null;
   var eventPickerSelectedId = null;
   var editingEventId = null;
@@ -1259,6 +1260,24 @@
     return counts;
   }
 
+  function pluralizeEvents(count) {
+    if (count === 1) return count + " akci";
+    if (count >= 2 && count <= 4) return count + " akce";
+    return count + " akcí";
+  }
+
+  function updateEventsBulkActionsUI() {
+    var bar = document.getElementById("events-bulk-actions");
+    bar.hidden = !adminToken || allEvents.length === 0;
+
+    var allSelected = allEvents.length > 0 && selectedEventIds.size === allEvents.length;
+    document.getElementById("events-select-all-btn").textContent = allSelected ? "zrušit výběr" : "vybrat vše";
+
+    var deleteBtn = document.getElementById("events-bulk-delete-btn");
+    deleteBtn.disabled = selectedEventIds.size === 0;
+    deleteBtn.textContent = selectedEventIds.size > 0 ? "smazat vybrané (" + selectedEventIds.size + ")" : "smazat vybrané";
+  }
+
   function renderEventsList() {
     var container = document.getElementById("events-list");
     var empty = document.getElementById("events-empty");
@@ -1267,9 +1286,35 @@
     empty.hidden = allEvents.length > 0;
     container.hidden = allEvents.length === 0;
 
+    var validIds = new Set(allEvents.map(function (evt) { return evt.id; }));
+    selectedEventIds.forEach(function (id) {
+      if (!validIds.has(id)) selectedEventIds.delete(id);
+    });
+    updateEventsBulkActionsUI();
+
     allEvents.forEach(function (evt) {
       var row = document.createElement("div");
       row.className = "event-row";
+
+      if (adminToken) {
+        var checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "event-row__checkbox";
+        checkbox.setAttribute("aria-label", "Vybrat akci " + evt.name);
+        checkbox.checked = selectedEventIds.has(evt.id);
+        checkbox.addEventListener("click", function (e) {
+          e.stopPropagation();
+        });
+        checkbox.addEventListener("change", function () {
+          if (checkbox.checked) {
+            selectedEventIds.add(evt.id);
+          } else {
+            selectedEventIds.delete(evt.id);
+          }
+          updateEventsBulkActionsUI();
+        });
+        row.appendChild(checkbox);
+      }
 
       var selectBtn = document.createElement("button");
       selectBtn.type = "button";
@@ -1319,28 +1364,36 @@
     });
   }
 
-  var pendingDeleteEventId = null;
+  var pendingDeleteEventIds = null;
 
   function deleteEvent(id, name) {
-    pendingDeleteEventId = id;
+    pendingDeleteEventIds = [id];
     document.getElementById("event-delete-modal-text").textContent = 'Opravdu smazat akci "' + name + '"?';
     document.getElementById("event-delete-modal").hidden = false;
   }
 
+  function bulkDeleteEvents() {
+    if (selectedEventIds.size === 0) return;
+    pendingDeleteEventIds = Array.from(selectedEventIds);
+    document.getElementById("event-delete-modal-text").textContent =
+      "Opravdu smazat " + pluralizeEvents(pendingDeleteEventIds.length) + "?";
+    document.getElementById("event-delete-modal").hidden = false;
+  }
+
   function closeEventDeleteModal() {
-    pendingDeleteEventId = null;
+    pendingDeleteEventIds = null;
     document.getElementById("event-delete-modal").hidden = true;
   }
 
   function confirmDeleteEvent(deletePhotos) {
-    var id = pendingDeleteEventId;
-    if (!id) return;
+    var ids = pendingDeleteEventIds;
+    if (!ids || !ids.length) return;
     closeEventDeleteModal();
 
     adminFetch("api/events.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "delete", id: id, deletePhotos: deletePhotos }),
+      body: JSON.stringify({ action: "delete", ids: ids, deletePhotos: deletePhotos }),
     })
       .then(function (res) {
         return res.json().then(function (data) {
@@ -1352,7 +1405,10 @@
           window.alert("Smazání akce selhalo: " + (result.data.error || "neznámá chyba"));
           return;
         }
-        if (activeEventFilterId === id) activeEventFilterId = null;
+        ids.forEach(function (id) {
+          if (activeEventFilterId === id) activeEventFilterId = null;
+          selectedEventIds.delete(id);
+        });
         renderActiveFiltersBar();
         loadEvents();
         loadPhotos();
@@ -1543,6 +1599,23 @@
       }
     });
 
+    document.getElementById("events-select-all-btn").addEventListener("click", function (event) {
+      event.stopPropagation();
+      var allSelected = allEvents.length > 0 && selectedEventIds.size === allEvents.length;
+      if (allSelected) {
+        selectedEventIds.clear();
+      } else {
+        allEvents.forEach(function (evt) {
+          selectedEventIds.add(evt.id);
+        });
+      }
+      renderEventsList();
+    });
+
+    document.getElementById("events-bulk-delete-btn").addEventListener("click", function (event) {
+      event.stopPropagation();
+      bulkDeleteEvents();
+    });
   }
 
   function getCountryName(code) {

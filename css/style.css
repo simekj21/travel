@@ -415,6 +415,14 @@ body {
   gap: 6px;
 }
 
+.event-row__checkbox {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+}
+
 .event-row__select {
   flex: 1;
   min-width: 0;
@@ -452,6 +460,29 @@ body {
 .events-panel .btn {
   width: 100%;
   margin-top: 8px;
+}
+
+.events-bulk-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.events-bulk-actions[hidden] {
+  display: none;
+}
+
+.events-bulk-actions .btn {
+  flex: 1;
+  width: auto;
+  margin-top: 0;
+  font-size: 12px;
+  padding: 8px 6px;
+}
+
+.events-bulk-actions .btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .form-field {

@@ -166,14 +166,21 @@ if ($action === 'create' || $action === 'update') {
 }
 
 if ($action === 'delete') {
-    $id = $input['id'] ?? null;
-    if (!$id) {
-        json_response(['error' => 'Chybí id'], 400);
+    $ids = $input['ids'] ?? null;
+    if (!is_array($ids)) {
+        $singleId = $input['id'] ?? null;
+        $ids = $singleId ? [$singleId] : [];
+    }
+    $ids = array_values(array_unique(array_filter($ids)));
+
+    if (empty($ids)) {
+        json_response(['error' => 'Chybí id akce/akcí'], 400);
     }
 
+    $idsToDelete = array_flip($ids);
     $before = count($events);
-    $events = array_values(array_filter($events, function ($event) use ($id) {
-        return $event['id'] !== $id;
+    $events = array_values(array_filter($events, function ($event) use ($idsToDelete) {
+        return !isset($idsToDelete[$event['id']]);
     }));
 
     if (count($events) === $before) {
@@ -183,13 +190,15 @@ if ($action === 'delete') {
         json_response(['error' => 'Uložení akce selhalo'], 500);
     }
 
-    if (!empty($input['deletePhotos'])) {
-        delete_event_photos($id);
-    } else {
-        remove_event_from_photos($id);
+    foreach ($ids as $id) {
+        if (!empty($input['deletePhotos'])) {
+            delete_event_photos($id);
+        } else {
+            remove_event_from_photos($id);
+        }
     }
 
-    json_response(['deleted' => $id]);
+    json_response(['deleted' => $ids]);
 }
 
 json_response(['error' => 'Neznámá akce'], 400);

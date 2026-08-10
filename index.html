@@ -30,6 +30,10 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
       </button>
       <div id="events-panel" class="filter-panel events-panel" hidden>
+        <div id="events-bulk-actions" class="events-bulk-actions" hidden>
+          <button id="events-select-all-btn" class="btn" type="button">vybrat vše</button>
+          <button id="events-bulk-delete-btn" class="btn btn--danger" type="button" disabled>smazat vybrané</button>
+        </div>
         <div id="events-list" class="events-list"></div>
         <p id="events-empty" class="filter-panel__empty" hidden>Zatím žádné akce.</p>
         <button id="events-add-btn" class="btn" hidden>+ přidat akci</button>
