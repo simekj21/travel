@@ -378,6 +378,7 @@
     renderActiveFiltersBar();
     closeLightbox();
     refreshDisplay();
+    syncMapWithCountryFilter();
   }
 
   function resetAllFilters() {
@@ -391,6 +392,7 @@
     renderCountryFilterList();
     renderActiveFiltersBar();
     refreshDisplay();
+    syncMapWithCountryFilter();
   }
 
   function renderActiveFiltersBar() {
@@ -442,6 +444,7 @@
           renderCountryFilterList();
           renderActiveFiltersBar();
           refreshDisplay();
+          syncMapWithCountryFilter();
         },
       });
     }
@@ -1711,6 +1714,7 @@
         renderCountryFilterList();
         renderActiveFiltersBar();
         refreshDisplay();
+        syncMapWithCountryFilter();
         document.getElementById("country-filter-panel").hidden = true;
         document.getElementById("country-filter-toggle").setAttribute("aria-expanded", "false");
       });
@@ -1771,7 +1775,7 @@
       var code = event.target.getAttribute("data-code");
       if (!code || !event.target.classList.contains("world-map__country--active")) return;
       applyExclusiveFilter("country", activeCountryFilterCode === code ? null : code);
-      closeMapView();
+      refreshWorldMapHighlights();
     });
 
     container.innerHTML = "";
@@ -1798,8 +1802,6 @@
     closeOtherFilterPanels({});
     if (!document.getElementById("world-map").firstChild) buildWorldMap();
     refreshWorldMapHighlights();
-    document.getElementById("gallery").hidden = true;
-    document.getElementById("active-filters-bar").hidden = true;
     document.getElementById("map-view").hidden = false;
     document.getElementById("map-toggle").classList.add("icon-btn--active");
     document.getElementById("map-toggle").setAttribute("aria-expanded", "true");
@@ -1807,11 +1809,17 @@
 
   function closeMapView() {
     document.getElementById("map-view").hidden = true;
-    document.getElementById("gallery").hidden = false;
     document.getElementById("map-toggle").classList.remove("icon-btn--active");
     document.getElementById("map-toggle").setAttribute("aria-expanded", "false");
-    renderActiveFiltersBar();
     if (!adminMode) applyTileSizeSliderBounds();
+  }
+
+  function syncMapWithCountryFilter() {
+    if (!document.getElementById("map-toggle").hidden && activeCountryFilterCode) {
+      openMapView();
+    } else if (!document.getElementById("map-view").hidden) {
+      refreshWorldMapHighlights();
+    }
   }
 
   function initMapView() {

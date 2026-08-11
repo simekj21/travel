@@ -862,6 +862,8 @@ body.site-mode-photo .topbar__actions {
 
 .map-view {
   padding: 16px 24px 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
 }
 
 .world-map {
