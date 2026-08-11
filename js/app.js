@@ -17,6 +17,8 @@
   var editingEventId = null;
   var incomingFolders = [];
   var selectedIncomingFolder = null;
+  var incomingPhotosFiles = [];
+  var incomingPhotosImportRunning = false;
   var incomingExistingEventId = null;
   var incomingCountryCode = null;
   var activeCountryFilterCode = null;
@@ -2109,9 +2111,14 @@
   }
 
   function openIncomingPhotosPicker() {
+    incomingPhotosFiles = [];
+    incomingPhotosImportRunning = false;
     document.getElementById("incoming-photos-delete-originals").checked = true;
     document.getElementById("incoming-photos-status").hidden = true;
     document.getElementById("incoming-photos-count").textContent = "Načítám...";
+    var progressEl = document.getElementById("incoming-photos-progress");
+    progressEl.hidden = true;
+    progressEl.innerHTML = "";
     setIncomingPhotosImportButtonState(false);
     document.getElementById("incoming-photos-picker").hidden = false;
 
@@ -2121,6 +2128,7 @@
         return res.json();
       })
       .then(function (result) {
+        incomingPhotosFiles = result.files || [];
         document.getElementById("incoming-photos-count").textContent =
           result.count > 0 ? "Nalezeno " + pluralizePhotos(result.count) + " ve složce photos/." : "Ve složce photos/ nejsou žádné fotky.";
       })
@@ -2130,7 +2138,72 @@
   }
 
   function closeIncomingPhotosPicker() {
+    if (incomingPhotosImportRunning) return;
     document.getElementById("incoming-photos-picker").hidden = true;
+  }
+
+  function addIncomingPhotosProgressRow(name) {
+    var progressEl = document.getElementById("incoming-photos-progress");
+    progressEl.hidden = false;
+    var row = document.createElement("li");
+    var nameEl = document.createElement("span");
+    nameEl.className = "incoming-photos-progress__name";
+    nameEl.textContent = name;
+    var statusEl = document.createElement("span");
+    statusEl.className = "incoming-photos-progress__status";
+    statusEl.textContent = "…";
+    row.appendChild(nameEl);
+    row.appendChild(statusEl);
+    progressEl.appendChild(row);
+    progressEl.scrollTop = progressEl.scrollHeight;
+    return { row: row, statusEl: statusEl };
+  }
+
+  function importIncomingPhotosOneByOne(files, deleteOriginals, onProgress) {
+    var imported = 0;
+    var skipped = 0;
+    var index = 0;
+
+    function next() {
+      if (index >= files.length) {
+        return Promise.resolve({ imported: imported, skipped: skipped });
+      }
+      var filename = files[index++];
+      var progress = addIncomingPhotosProgressRow(filename);
+
+      return adminFetch("api/import-incoming-photos.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: filename, deleteOriginals: deleteOriginals }),
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, data: data };
+          });
+        })
+        .then(function (result) {
+          if (result.ok && result.data.imported) {
+            imported++;
+            progress.row.className = "incoming-photos-progress--ok";
+            progress.statusEl.textContent = "✓";
+          } else {
+            skipped++;
+            progress.row.className = "incoming-photos-progress--fail";
+            progress.statusEl.textContent = "✗";
+          }
+        })
+        .catch(function () {
+          skipped++;
+          progress.row.className = "incoming-photos-progress--fail";
+          progress.statusEl.textContent = "✗";
+        })
+        .then(function () {
+          onProgress(index, files.length);
+          return next();
+        });
+    }
+
+    return next();
   }
 
   function submitIncomingPhotosImport() {
@@ -2138,41 +2211,30 @@
       closeIncomingPhotosPicker();
       return;
     }
+    if (incomingPhotosImportRunning || incomingPhotosFiles.length === 0) return;
+
+    incomingPhotosImportRunning = true;
+    document.getElementById("incoming-photos-import").disabled = true;
+    document.getElementById("incoming-photos-cancel").disabled = true;
 
     var deleteOriginals = document.getElementById("incoming-photos-delete-originals").checked;
     var statusEl = document.getElementById("incoming-photos-status");
     statusEl.hidden = false;
     statusEl.className = "form-error";
-    statusEl.textContent = "Importuji...";
+    statusEl.textContent = "Importuji 0 / " + incomingPhotosFiles.length + "...";
 
-    adminFetch("api/import-incoming-photos.php", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ deleteOriginals: deleteOriginals }),
-    })
-      .then(function (res) {
-        return res.json().then(function (data) {
-          return { ok: res.ok, data: data };
-        });
-      })
-      .then(function (result) {
-        if (!result.ok) {
-          statusEl.className = "form-error";
-          statusEl.textContent = result.data.error || "Import selhal";
-          return;
-        }
-        statusEl.className = "form-error form-status--ok";
-        statusEl.textContent =
-          "Importováno: " +
-          result.data.imported +
-          (result.data.skipped.length ? ", přeskočeno: " + result.data.skipped.length : "");
-        setIncomingPhotosImportButtonState(true);
-        loadPhotos();
-      })
-      .catch(function () {
-        statusEl.className = "form-error";
-        statusEl.textContent = "Import selhal. Zkuste to prosím znovu.";
-      });
+    importIncomingPhotosOneByOne(incomingPhotosFiles, deleteOriginals, function (done, total) {
+      statusEl.textContent = "Importuji " + done + " / " + total + "...";
+    }).then(function (result) {
+      incomingPhotosImportRunning = false;
+      document.getElementById("incoming-photos-cancel").disabled = false;
+      document.getElementById("incoming-photos-import").disabled = false;
+      statusEl.className = "form-error form-status--ok";
+      statusEl.textContent =
+        "Importováno: " + result.imported + (result.skipped ? ", přeskočeno: " + result.skipped : "");
+      setIncomingPhotosImportButtonState(true);
+      loadPhotos();
+    });
   }
 
   function initIncomingPhotosPicker() {

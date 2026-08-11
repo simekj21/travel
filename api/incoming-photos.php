@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 require_admin();
 
-$count = 0;
+$files = [];
 
 if (is_dir($photosRoot)) {
     foreach (scandir($photosRoot) ?: [] as $entry) {
@@ -34,9 +34,9 @@ if (is_dir($photosRoot)) {
         }
         $extension = strtolower((string) pathinfo($entry, PATHINFO_EXTENSION));
         if (in_array($extension, ALLOWED_IMAGE_TYPES, true) || $extension === 'jpeg') {
-            $count++;
+            $files[] = $entry;
         }
     }
 }
 
-json_response(['count' => $count]);
+json_response(['count' => count($files), 'files' => $files]);

@@ -339,6 +339,54 @@ body.site-mode-photo .topbar__actions {
   margin-top: 12px;
 }
 
+.incoming-photos-progress {
+  list-style: none;
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 8px 0 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.incoming-photos-progress[hidden] {
+  display: none;
+}
+
+.incoming-photos-progress li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+
+.incoming-photos-progress li:last-child {
+  border-bottom: none;
+}
+
+.incoming-photos-progress__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.incoming-photos-progress__status {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.incoming-photos-progress li.incoming-photos-progress--ok .incoming-photos-progress__status {
+  color: #2e7d32;
+}
+
+.incoming-photos-progress li.incoming-photos-progress--fail .incoming-photos-progress__status {
+  color: #c62828;
+}
+
 .tag-chip {
   padding: 6px 12px;
   border: 1px solid var(--border);

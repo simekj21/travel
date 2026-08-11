@@ -25,71 +25,64 @@ require_admin();
 
 $input = json_decode(file_get_contents('php://input'), true);
 $deleteOriginals = !array_key_exists('deleteOriginals', (array) $input) || (bool) $input['deleteOriginals'];
+$filename = basename((string) ($input['filename'] ?? ''));
+
+if ($filename === '') {
+    json_response(['error' => 'Chybí název souboru'], 400);
+}
 
 $realPhotosRoot = realpath($photosRoot);
 if (!$realPhotosRoot || !is_dir($realPhotosRoot)) {
     json_response(['error' => 'Složka photos/ nenalezena'], 404);
 }
 
-$photos = load_photos($dataFile);
-$imported = [];
-$skipped = [];
+$sourcePath = "$realPhotosRoot/$filename";
+if (!is_file($sourcePath)) {
+    json_response(['error' => "$filename: soubor nenalezen"], 404);
+}
 
-foreach (scandir($realPhotosRoot) ?: [] as $entry) {
-    if ($entry === '.' || $entry === '..' || $entry[0] === '.') {
-        continue;
-    }
-    $sourcePath = "$realPhotosRoot/$entry";
-    if (!is_file($sourcePath)) {
-        continue;
-    }
+$finfo = finfo_open(FILEINFO_MIME_TYPE);
+$mimeType = finfo_file($finfo, $sourcePath);
+finfo_close($finfo);
 
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mimeType = finfo_file($finfo, $sourcePath);
-    finfo_close($finfo);
+if (!isset(ALLOWED_IMAGE_TYPES[$mimeType])) {
+    json_response(['skipped' => "$filename: nepodporovaný typ souboru"]);
+}
 
-    if (!isset(ALLOWED_IMAGE_TYPES[$mimeType])) {
-        $skipped[] = "$entry: nepodporovaný typ souboru";
-        continue;
-    }
+$target = make_upload_target($uploadsRoot, ALLOWED_IMAGE_TYPES[$mimeType]);
 
-    $target = make_upload_target($uploadsRoot, ALLOWED_IMAGE_TYPES[$mimeType]);
-
-    if ($deleteOriginals) {
-        if (!@rename($sourcePath, $target['originalDestPath'])) {
-            if (!@copy($sourcePath, $target['originalDestPath'])) {
-                $skipped[] = "$entry: přesun se nezdařil";
-                continue;
-            }
-            @unlink($sourcePath);
-        }
-    } else {
+if ($deleteOriginals) {
+    if (!@rename($sourcePath, $target['originalDestPath'])) {
         if (!@copy($sourcePath, $target['originalDestPath'])) {
-            $skipped[] = "$entry: kopírování se nezdařilo";
-            continue;
+            json_response(['skipped' => "$filename: přesun se nezdařil"]);
         }
+        @unlink($sourcePath);
     }
-
-    $dims = finalize_uploaded_image($target['originalDestPath'], $mimeType, $target['thumbDestPath']);
-
-    $record = [
-        'id' => bin2hex(random_bytes(6)),
-        'originalUrl' => $target['originalUrl'],
-        'thumbUrl' => $target['thumbUrl'],
-        'originalName' => $entry,
-        'uploadedAt' => date('c'),
-        'width' => $dims['width'],
-        'height' => $dims['height'],
-        'eventId' => null,
-        'countryCode' => null,
-    ];
-
-    $photos[] = $record;
-    $imported[] = $record;
+} else {
+    if (!@copy($sourcePath, $target['originalDestPath'])) {
+        json_response(['skipped' => "$filename: kopírování se nezdařilo"]);
+    }
 }
 
-if (!empty($imported) && !save_photos($dataFile, $photos)) {
-    json_response(['error' => "Fotky se importovaly, ale zápis do $dataFile selhal"], 500);
+$dims = finalize_uploaded_image($target['originalDestPath'], $mimeType, $target['thumbDestPath']);
+
+$record = [
+    'id' => bin2hex(random_bytes(6)),
+    'originalUrl' => $target['originalUrl'],
+    'thumbUrl' => $target['thumbUrl'],
+    'originalName' => $filename,
+    'uploadedAt' => date('c'),
+    'width' => $dims['width'],
+    'height' => $dims['height'],
+    'eventId' => null,
+    'countryCode' => null,
+];
+
+$photos = load_photos($dataFile);
+$photos[] = $record;
+
+if (!save_photos($dataFile, $photos)) {
+    json_response(['error' => "$filename: zápis do $dataFile selhal"], 500);
 }
 
-json_response(['imported' => count($imported), 'skipped' => $skipped]);
+json_response(['imported' => $record]);
