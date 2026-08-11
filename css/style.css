@@ -206,6 +206,16 @@ body.site-mode-photo .topbar__actions {
   border-color: var(--text-muted);
 }
 
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn--danger:disabled:hover {
+  background: none;
+  color: #b3261e;
+}
+
 .btn--danger {
   color: #b3261e;
   border-color: #b3261e;
@@ -513,6 +523,23 @@ body.site-mode-photo .topbar__actions {
   border: 0;
   border-top: 1px solid var(--border);
   margin: 0;
+}
+
+.platform-config-danger {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.platform-config-danger__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #b3261e;
+}
+
+.platform-config-danger .btn--danger {
+  width: 100%;
 }
 
 .tile-size-slider {

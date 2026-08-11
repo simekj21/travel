@@ -103,6 +103,15 @@
         </label>
         <p id="platform-config-status" class="form-error" hidden></p>
         <button id="platform-config-save" class="btn btn--primary">uložit</button>
+
+        <hr class="platform-config-separator">
+        <div class="platform-config-danger">
+          <p class="platform-config-danger__title">Nebezpečná zóna</p>
+          <p class="filter-panel__empty">Smaže všechny fotky, tagy a akce (včetně nahraných souborů). Nastavení platformy zůstane zachováno. Nelze vrátit zpět.</p>
+          <input id="platform-reset-confirm" type="text" class="input" placeholder='napište "reset"' autocomplete="off">
+          <button id="platform-reset-btn" class="btn btn--danger" disabled>resetovat platformu</button>
+          <p id="platform-reset-status" class="form-error" hidden></p>
+        </div>
       </div>
     </div>
   </div>

@@ -1002,6 +1002,9 @@
     document.getElementById("config-tags-enabled").checked = platformSettings.tagsEnabled;
     document.getElementById("config-country-filter-enabled").checked = platformSettings.countryFilterEnabled;
     document.getElementById("platform-config-status").hidden = true;
+    document.getElementById("platform-reset-confirm").value = "";
+    document.getElementById("platform-reset-btn").disabled = true;
+    document.getElementById("platform-reset-status").hidden = true;
     updatePlatformConfigModeUI();
   }
 
@@ -1042,6 +1045,53 @@
       });
   }
 
+  function resetPlatform() {
+    var btn = document.getElementById("platform-reset-btn");
+    var input = document.getElementById("platform-reset-confirm");
+    var status = document.getElementById("platform-reset-status");
+    if (input.value !== "reset") return;
+
+    btn.disabled = true;
+    input.disabled = true;
+    status.hidden = false;
+    status.className = "form-error";
+    status.textContent = "Resetuji...";
+
+    adminFetch("api/reset.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirm: input.value }),
+    })
+      .then(function (res) {
+        return res.json().then(function (data) {
+          return { ok: res.ok, data: data };
+        });
+      })
+      .then(function (result) {
+        input.disabled = false;
+        if (!result.ok) {
+          status.className = "form-error";
+          status.textContent = result.data.error || "Reset selhal";
+          btn.disabled = input.value !== "reset";
+          return;
+        }
+        clearSelection();
+        resetAllFilters();
+        loadPhotos();
+        loadTags();
+        loadEvents();
+        input.value = "";
+        status.className = "form-error form-status--ok";
+        status.textContent = "Platforma byla resetována.";
+      })
+      .catch(function () {
+        input.disabled = false;
+        btn.disabled = input.value !== "reset";
+        status.className = "form-error";
+        status.textContent = "Reset selhal. Zkuste to prosím znovu.";
+      });
+  }
+
   function initPlatformConfigPanel() {
     var toggle = document.getElementById("platform-config-toggle");
     var panel = document.getElementById("platform-config-panel");
@@ -1074,6 +1124,11 @@
 
     document.getElementById("config-mode-travel").addEventListener("change", updatePlatformConfigModeUI);
     document.getElementById("config-mode-photo").addEventListener("change", updatePlatformConfigModeUI);
+
+    document.getElementById("platform-reset-confirm").addEventListener("input", function () {
+      document.getElementById("platform-reset-btn").disabled = this.value !== "reset";
+    });
+    document.getElementById("platform-reset-btn").addEventListener("click", resetPlatform);
   }
 
   function renderTagPickerChips() {
