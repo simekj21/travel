@@ -1714,9 +1714,7 @@
         renderCountryFilterList();
         renderActiveFiltersBar();
         refreshDisplay();
-        syncMapWithCountryFilter();
-        document.getElementById("country-filter-panel").hidden = true;
-        document.getElementById("country-filter-toggle").setAttribute("aria-expanded", "false");
+        syncMapWithCountryFilter(document.getElementById("country-filter-panel"));
       });
       container.appendChild(btn);
     });
@@ -1798,8 +1796,8 @@
     });
   }
 
-  function openMapView() {
-    closeOtherFilterPanels({});
+  function openMapView(keepPanel) {
+    closeOtherFilterPanels(keepPanel || {});
     if (!document.getElementById("world-map").firstChild) buildWorldMap();
     refreshWorldMapHighlights();
     document.getElementById("map-view").hidden = false;
@@ -1814,9 +1812,9 @@
     if (!adminMode) applyTileSizeSliderBounds();
   }
 
-  function syncMapWithCountryFilter() {
+  function syncMapWithCountryFilter(keepPanel) {
     if (!document.getElementById("map-toggle").hidden && activeCountryFilterCode) {
-      openMapView();
+      openMapView(keepPanel);
     } else if (!document.getElementById("map-view").hidden) {
       refreshWorldMapHighlights();
     }
