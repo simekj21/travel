@@ -1934,12 +1934,19 @@
     });
   }
 
+  function normalizeForSearch(str) {
+    return str
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .toLowerCase();
+  }
+
   function renderCountryPickerList(query) {
     var container = document.getElementById("country-picker-list");
     container.innerHTML = "";
-    var q = query.trim().toLowerCase();
+    var q = normalizeForSearch(query.trim());
     var list = window.COUNTRIES.filter(function (c) {
-      return !q || c.name.toLowerCase().indexOf(q) !== -1;
+      return !q || normalizeForSearch(c.name).indexOf(q) !== -1;
     });
 
     list.forEach(function (c) {
@@ -2139,6 +2146,10 @@
   function submitIncomingImport() {
     if (!selectedIncomingFolder) {
       window.alert("Vyberte složku k importu.");
+      return;
+    }
+
+    if (!incomingCountryCode && !window.confirm("Nemáte vybranou zemi. Opravdu chcete importovat bez země?")) {
       return;
     }
 
