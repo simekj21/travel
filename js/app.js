@@ -1830,7 +1830,7 @@
       var code = event.target.getAttribute("data-code");
       if (!code || !event.target.classList.contains("world-map__country--active")) return;
       applyExclusiveFilter("country", activeCountryFilterCode === code ? null : code);
-      refreshWorldMapHighlights();
+      closeMapView();
     });
 
     container.innerHTML = "";
