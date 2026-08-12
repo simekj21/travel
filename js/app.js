@@ -17,6 +17,7 @@
   var editingEventId = null;
   var incomingFolders = [];
   var selectedIncomingFolder = null;
+  var incomingImportRunning = false;
   var incomingPhotosFiles = [];
   var incomingPhotosImportRunning = false;
   var incomingExistingEventId = null;
@@ -2125,12 +2126,18 @@
     selectedIncomingFolder = null;
     incomingExistingEventId = null;
     incomingCountryCode = null;
+    incomingImportRunning = false;
     document.getElementById("incoming-event-section").hidden = true;
     document.getElementById("incoming-event-name").value = "";
     document.getElementById("incoming-event-start").value = new Date().toISOString().slice(0, 10);
     document.querySelector('input[name="incoming-event-mode"][value="new"]').checked = true;
     document.getElementById("incoming-delete-originals").checked = true;
     document.getElementById("incoming-status").hidden = true;
+    var progressEl = document.getElementById("incoming-progress");
+    progressEl.hidden = true;
+    progressEl.innerHTML = "";
+    document.getElementById("incoming-cancel").disabled = false;
+    document.getElementById("incoming-import").disabled = false;
     setIncomingImportButtonState(false);
     renderIncomingExistingEvents();
     updateIncomingEventModeVisibility();
@@ -2140,10 +2147,13 @@
   }
 
   function closeIncomingPicker() {
+    if (incomingImportRunning) return;
     document.getElementById("incoming-picker").hidden = true;
   }
 
   function submitIncomingImport() {
+    if (incomingImportRunning) return;
+
     if (!selectedIncomingFolder) {
       window.alert("Vyberte složku k importu.");
       return;
@@ -2155,17 +2165,12 @@
 
     var eventMode = document.querySelector('input[name="incoming-event-mode"]:checked').value;
     var deleteOriginals = document.getElementById("incoming-delete-originals").checked;
-    var payload = {
-      folder: selectedIncomingFolder,
-      eventMode: eventMode,
-      deleteOriginals: deleteOriginals,
-      countryCode: incomingCountryCode,
-    };
+    var resolvePayload = { eventMode: eventMode };
 
     if (eventMode === "new") {
-      payload.eventName = document.getElementById("incoming-event-name").value.trim();
-      payload.eventStartDate = document.getElementById("incoming-event-start").value;
-      if (!payload.eventName || !payload.eventStartDate) {
+      resolvePayload.eventName = document.getElementById("incoming-event-name").value.trim();
+      resolvePayload.eventStartDate = document.getElementById("incoming-event-start").value;
+      if (!resolvePayload.eventName || !resolvePayload.eventStartDate) {
         window.alert("Vyplňte prosím název a datum nové akce.");
         return;
       }
@@ -2174,35 +2179,75 @@
         window.alert("Vyberte existující akci.");
         return;
       }
-      payload.eventId = incomingExistingEventId;
+      resolvePayload.eventId = incomingExistingEventId;
     }
+
+    incomingImportRunning = true;
+    document.getElementById("incoming-cancel").disabled = true;
+    document.getElementById("incoming-import").disabled = true;
 
     var statusEl = document.getElementById("incoming-status");
     statusEl.hidden = false;
     statusEl.className = "form-error";
     statusEl.textContent = "Importuji...";
 
-    adminFetch("api/import-incoming.php", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
-      .then(function (res) {
+    var folder = selectedIncomingFolder;
+    var countryCode = incomingCountryCode;
+
+    function fail(message) {
+      incomingImportRunning = false;
+      document.getElementById("incoming-cancel").disabled = false;
+      document.getElementById("incoming-import").disabled = false;
+      statusEl.className = "form-error";
+      statusEl.textContent = message;
+    }
+
+    Promise.all([
+      adminFetch("api/incoming-folder-files.php?folder=" + encodeURIComponent(folder), { cache: "no-store" }).then(
+        function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, data: data };
+          });
+        }
+      ),
+      adminFetch("api/incoming-resolve-event.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(resolvePayload),
+      }).then(function (res) {
         return res.json().then(function (data) {
           return { ok: res.ok, data: data };
         });
+      }),
+    ])
+      .then(function (results) {
+        var filesResult = results[0];
+        var eventResult = results[1];
+        if (!filesResult.ok) throw new Error(filesResult.data.error || "Nepodařilo se načíst soubory");
+        if (!eventResult.ok) throw new Error(eventResult.data.error || "Uložení akce selhalo");
+
+        var files = filesResult.data.files || [];
+        var eventId = eventResult.data.eventId;
+
+        if (files.length === 0) {
+          return { imported: 0, skipped: 0 };
+        }
+
+        statusEl.textContent = "Importuji 0 / " + files.length + "...";
+        return importIncomingFolderFilesOneByOne(folder, files, eventId, countryCode, deleteOriginals, function (
+          done,
+          total
+        ) {
+          statusEl.textContent = "Importuji " + done + " / " + total + "...";
+        });
       })
       .then(function (result) {
-        if (!result.ok) {
-          statusEl.className = "form-error";
-          statusEl.textContent = result.data.error || "Import selhal";
-          return;
-        }
+        incomingImportRunning = false;
+        document.getElementById("incoming-cancel").disabled = false;
+        document.getElementById("incoming-import").disabled = false;
         statusEl.className = "form-error form-status--ok";
         statusEl.textContent =
-          "Importováno: " +
-          result.data.imported +
-          (result.data.skipped.length ? ", přeskočeno: " + result.data.skipped.length : "");
+          "Importováno: " + result.imported + (result.skipped ? ", přeskočeno: " + result.skipped : "");
         selectedIncomingFolder = null;
         document.getElementById("incoming-event-section").hidden = true;
         setIncomingImportButtonState(true);
@@ -2210,9 +2255,8 @@
         loadEvents();
         loadPhotos();
       })
-      .catch(function () {
-        statusEl.className = "form-error";
-        statusEl.textContent = "Import selhal. Zkuste to prosím znovu.";
+      .catch(function (err) {
+        fail(err.message || "Import selhal. Zkuste to prosím znovu.");
       });
   }
 
@@ -2254,8 +2298,8 @@
     document.getElementById("incoming-photos-picker").hidden = true;
   }
 
-  function addIncomingPhotosProgressRow(name) {
-    var progressEl = document.getElementById("incoming-photos-progress");
+  function addIncomingProgressRow(containerId, name) {
+    var progressEl = document.getElementById(containerId);
     progressEl.hidden = false;
     var row = document.createElement("li");
     var nameEl = document.createElement("span");
@@ -2281,12 +2325,65 @@
         return Promise.resolve({ imported: imported, skipped: skipped });
       }
       var filename = files[index++];
-      var progress = addIncomingPhotosProgressRow(filename);
+      var progress = addIncomingProgressRow("incoming-photos-progress", filename);
 
       return adminFetch("api/import-incoming-photos.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ filename: filename, deleteOriginals: deleteOriginals }),
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, data: data };
+          });
+        })
+        .then(function (result) {
+          if (result.ok && result.data.imported) {
+            imported++;
+            progress.row.className = "incoming-photos-progress--ok";
+            progress.statusEl.textContent = "✓";
+          } else {
+            skipped++;
+            progress.row.className = "incoming-photos-progress--fail";
+            progress.statusEl.textContent = "✗";
+          }
+        })
+        .catch(function () {
+          skipped++;
+          progress.row.className = "incoming-photos-progress--fail";
+          progress.statusEl.textContent = "✗";
+        })
+        .then(function () {
+          onProgress(index, files.length);
+          return next();
+        });
+    }
+
+    return next();
+  }
+
+  function importIncomingFolderFilesOneByOne(folder, files, eventId, countryCode, deleteOriginals, onProgress) {
+    var imported = 0;
+    var skipped = 0;
+    var index = 0;
+
+    function next() {
+      if (index >= files.length) {
+        return Promise.resolve({ imported: imported, skipped: skipped });
+      }
+      var filename = files[index++];
+      var progress = addIncomingProgressRow("incoming-progress", filename);
+
+      return adminFetch("api/import-incoming-file.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          folder: folder,
+          filename: filename,
+          eventId: eventId,
+          countryCode: countryCode,
+          deleteOriginals: deleteOriginals,
+        }),
       })
         .then(function (res) {
           return res.json().then(function (data) {
