@@ -380,7 +380,7 @@
     renderActiveFiltersBar();
     closeLightbox();
     refreshDisplay();
-    syncMapWithCountryFilter();
+    renderCountryHighlight();
   }
 
   function resetAllFilters() {
@@ -394,7 +394,7 @@
     renderCountryFilterList();
     renderActiveFiltersBar();
     refreshDisplay();
-    syncMapWithCountryFilter();
+    renderCountryHighlight();
   }
 
   function renderActiveFiltersBar() {
@@ -446,7 +446,7 @@
           renderCountryFilterList();
           renderActiveFiltersBar();
           refreshDisplay();
-          syncMapWithCountryFilter();
+          renderCountryHighlight();
         },
       });
     }
@@ -1771,7 +1771,7 @@
         renderCountryFilterList();
         renderActiveFiltersBar();
         refreshDisplay();
-        syncMapWithCountryFilter(document.getElementById("country-filter-panel"));
+        renderCountryHighlight();
       });
       container.appendChild(btn);
     });
@@ -1853,10 +1853,11 @@
     });
   }
 
-  function openMapView(keepPanel) {
-    closeOtherFilterPanels(keepPanel || {});
+  function openMapView() {
+    closeOtherFilterPanels({});
     if (!document.getElementById("world-map").firstChild) buildWorldMap();
     refreshWorldMapHighlights();
+    document.getElementById("gallery").hidden = true;
     document.getElementById("map-view").hidden = false;
     document.getElementById("map-toggle").classList.add("icon-btn--active");
     document.getElementById("map-toggle").setAttribute("aria-expanded", "true");
@@ -1864,17 +1865,62 @@
 
   function closeMapView() {
     document.getElementById("map-view").hidden = true;
+    document.getElementById("gallery").hidden = false;
     document.getElementById("map-toggle").classList.remove("icon-btn--active");
     document.getElementById("map-toggle").setAttribute("aria-expanded", "false");
     if (!adminMode) applyTileSizeSliderBounds();
   }
 
-  function syncMapWithCountryFilter(keepPanel) {
-    if (!document.getElementById("map-toggle").hidden && activeCountryFilterCode) {
-      openMapView(keepPanel);
-    } else if (!document.getElementById("map-view").hidden) {
-      refreshWorldMapHighlights();
+  var countryHighlightProbePath = null;
+
+  function getCountryPathBBox(d) {
+    if (!countryHighlightProbePath) {
+      var svgNs = "http://www.w3.org/2000/svg";
+      var probeSvg = document.createElementNS(svgNs, "svg");
+      probeSvg.setAttribute("style", "position:absolute;visibility:hidden;width:0;height:0;");
+      countryHighlightProbePath = document.createElementNS(svgNs, "path");
+      probeSvg.appendChild(countryHighlightProbePath);
+      document.body.appendChild(probeSvg);
     }
+    countryHighlightProbePath.setAttribute("d", d);
+    return countryHighlightProbePath.getBBox();
+  }
+
+  function getLargestSubpath(d) {
+    var subpaths = d.match(/M[^M]*/g) || [d];
+    var best = null;
+    subpaths.forEach(function (sub) {
+      var bbox = getCountryPathBBox(sub);
+      var area = bbox.width * bbox.height;
+      if (!best || area > best.area) {
+        best = { d: sub, bbox: bbox, area: area };
+      }
+    });
+    return best;
+  }
+
+  function renderCountryHighlight() {
+    var container = document.getElementById("country-highlight");
+    var code = activeCountryFilterCode;
+    var d = code && window.WORLD_MAP.paths[code];
+    if (!d) {
+      container.hidden = true;
+      return;
+    }
+
+    // some countries bundle far-away overseas territories into the same path;
+    // only draw/frame the largest contiguous shape (the mainland) for the postcard-style preview
+    var main = getLargestSubpath(d);
+    document.getElementById("country-highlight-path").setAttribute("d", main.d);
+
+    var bbox = main.bbox;
+    var pad = Math.max(bbox.width, bbox.height, 1) * 0.08;
+    document.getElementById("country-highlight-svg").setAttribute(
+      "viewBox",
+      (bbox.x - pad) + " " + (bbox.y - pad) + " " + (bbox.width + pad * 2) + " " + (bbox.height + pad * 2)
+    );
+    document.getElementById("country-highlight-label").textContent = getCountryName(code);
+    container.hidden = false;
   }
 
   function initMapView() {

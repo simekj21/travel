@@ -937,8 +937,37 @@ body.site-mode-photo .topbar__actions {
 
 .map-view {
   padding: 16px 24px 8px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 8px;
+}
+
+.country-highlight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 24px 0;
+}
+
+.country-highlight[hidden] {
+  display: none;
+}
+
+.country-highlight__svg {
+  width: 100%;
+  max-width: 180px;
+  height: 130px;
+  display: block;
+}
+
+.country-highlight__path {
+  fill: #c62828;
+  stroke: var(--bg);
+  stroke-width: 0.5;
+}
+
+.country-highlight__label {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 .world-map {
