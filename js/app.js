@@ -125,18 +125,12 @@
   }
 
   function updateAdminAuthHint() {
+    document.getElementById("admin-toggle").hidden = !adminToken;
     document.getElementById("admin-toggle").classList.toggle("icon-btn--admin-authenticated", !!adminToken && !adminMode);
     document.getElementById("platform-config-toggle").classList.toggle("icon-btn--admin-authenticated", !!adminToken);
     document.getElementById("events-toggle").classList.toggle("icon-btn--admin-hint", !!adminToken);
     document.getElementById("events-add-btn").hidden = !adminToken;
     renderEventsList();
-  }
-
-  function hintLoginViaGear() {
-    var gear = document.getElementById("platform-config-toggle");
-    gear.classList.remove("icon-btn--shake");
-    void gear.offsetWidth;
-    gear.classList.add("icon-btn--shake");
   }
 
   function enterAdminMode() {
@@ -853,12 +847,8 @@
     adminToggle.addEventListener("click", function () {
       if (adminMode) {
         exitAdminMode();
-        return;
-      }
-      if (adminToken) {
-        enterAdminMode();
       } else {
-        hintLoginViaGear();
+        enterAdminMode();
       }
     });
 
