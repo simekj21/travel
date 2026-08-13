@@ -2,6 +2,7 @@
   "use strict";
 
   var THEME_KEY = "theme";
+  var themeAutoSet = false;
   var ADMIN_TOKEN_KEY = "adminToken";
   var manualTileSize = null;
   var adminMode = false;
@@ -32,8 +33,12 @@
 
   function initTheme() {
     var saved = localStorage.getItem(THEME_KEY);
-    var theme = saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    setTheme(theme);
+    if (saved) {
+      setTheme(saved);
+    } else {
+      themeAutoSet = true;
+      setTheme(window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    }
   }
 
   function setTheme(theme) {
@@ -42,6 +47,7 @@
   }
 
   function toggleTheme() {
+    themeAutoSet = false;
     var current = document.documentElement.getAttribute("data-theme");
     setTheme(current === "dark" ? "light" : "dark");
   }
@@ -306,6 +312,11 @@
   function applyPlatformSettings() {
     var photoMode = platformSettings.siteMode === "photo";
     updateSiteModeVisuals(photoMode);
+
+    if (themeAutoSet && !photoMode) {
+      themeAutoSet = false;
+      setTheme("dark");
+    }
     var mapOn = !photoMode && platformSettings.mapEnabled;
     var eventsOn = !photoMode && platformSettings.eventsEnabled;
     var tagsOn = !photoMode && platformSettings.tagsEnabled;
