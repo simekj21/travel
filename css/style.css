@@ -1001,6 +1001,7 @@ body.site-mode-photo .topbar__actions {
   border-radius: 999px;
   background: var(--surface);
   color: var(--text-muted);
+  opacity: 0.6;
   cursor: pointer;
   font-size: 13px;
 }
@@ -1008,12 +1009,14 @@ body.site-mode-photo .topbar__actions {
 .map-country-chip:hover {
   border-color: var(--text-muted);
   color: var(--text);
+  opacity: 1;
 }
 
 .map-country-chip--active {
   background: #378ada;
   border-color: #378ada;
   color: #fff;
+  opacity: 1;
 }
 
 .world-map__country--active:hover {
