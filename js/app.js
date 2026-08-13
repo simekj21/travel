@@ -1794,7 +1794,7 @@
       btn.type = "button";
       btn.className =
         "map-country-chip" + (activeCountryFilterCode === country.code ? " map-country-chip--active" : "");
-      btn.textContent = country.name + " (" + country.count + ")";
+      btn.textContent = country.name;
       btn.addEventListener("click", function (event) {
         event.stopPropagation();
         applyExclusiveFilter("country", activeCountryFilterCode === country.code ? null : country.code);
