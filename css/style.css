@@ -983,6 +983,38 @@ body.site-mode-photo .topbar__actions {
   cursor: pointer;
 }
 
+.map-country-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 24px 0;
+}
+
+.map-country-list[hidden] {
+  display: none;
+}
+
+.map-country-chip {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: #1a1a18;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.map-country-chip:hover {
+  border-color: var(--text-muted);
+}
+
+.map-country-chip--active {
+  background: #378ada;
+  border-color: #378ada;
+  color: #fff;
+}
+
 .world-map__country--active:hover {
   fill: #2a6fb0;
 }

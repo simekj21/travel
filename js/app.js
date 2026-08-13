@@ -1779,6 +1779,29 @@
       });
       container.appendChild(btn);
     });
+
+    renderMapCountryList();
+  }
+
+  function renderMapCountryList() {
+    var container = document.getElementById("map-country-list");
+    var countries = getUsedCountries();
+    container.innerHTML = "";
+    container.hidden = countries.length === 0;
+
+    countries.forEach(function (country) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className =
+        "map-country-chip" + (activeCountryFilterCode === country.code ? " map-country-chip--active" : "");
+      btn.textContent = country.name + " (" + country.count + ")";
+      btn.addEventListener("click", function (event) {
+        event.stopPropagation();
+        applyExclusiveFilter("country", activeCountryFilterCode === country.code ? null : country.code);
+        closeMapView();
+      });
+      container.appendChild(btn);
+    });
   }
 
   function initCountryFilterPanel() {
