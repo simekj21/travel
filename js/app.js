@@ -44,6 +44,8 @@
   function setTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem(THEME_KEY, theme);
+    var meta = document.getElementById("theme-color-meta");
+    if (meta) meta.setAttribute("content", theme === "dark" ? "#171715" : "#f7f7f5");
   }
 
   function toggleTheme() {
