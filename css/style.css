@@ -5,12 +5,12 @@
   --text: #1a1a18;
   --text-muted: #6b6a66;
   --overlay: rgba(0, 0, 0, 0.85);
-  --tile-size: 140px;
+  --tile-size: 210px;
 }
 
 @media (min-width: 900px) {
   :root {
-    --tile-size: 180px;
+    --tile-size: 270px;
   }
 }
 

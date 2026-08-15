@@ -118,7 +118,7 @@
     // subpixel/scrollbar rounding differences can't push the grid past the edge.
     var finalTileSize = Math.floor((containerWidth - gap * (bestCols - 1)) / bestCols) - 2;
 
-    return Math.max(AUTO_FILL_FLOOR_TILE_SIZE, finalTileSize);
+    return Math.max(AUTO_FILL_FLOOR_TILE_SIZE, Math.round(finalTileSize * 1.5));
   }
 
   function applyTileSizeSliderBounds() {
