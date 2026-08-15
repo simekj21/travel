@@ -478,8 +478,13 @@
   function goHome() {
     closeOtherFilterPanels({});
     if (!document.getElementById("lightbox").hidden) closeLightbox();
-    if (!document.getElementById("map-view").hidden) closeMapView();
     resetAllFilters();
+
+    var mapShouldBeOpen = platformSettings.siteMode !== "photo" && platformSettings.mapEnabled;
+    var mapIsOpen = !document.getElementById("map-view").hidden;
+    if (mapShouldBeOpen && !mapIsOpen) openMapView();
+    if (!mapShouldBeOpen && mapIsOpen) closeMapView();
+
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
