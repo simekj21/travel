@@ -475,6 +475,18 @@
     document.getElementById("active-filters-reset").addEventListener("click", resetAllFilters);
   }
 
+  function goHome() {
+    closeOtherFilterPanels({});
+    if (!document.getElementById("lightbox").hidden) closeLightbox();
+    if (!document.getElementById("map-view").hidden) closeMapView();
+    resetAllFilters();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function initSiteModeBadge() {
+    document.getElementById("site-mode-badge").addEventListener("click", goHome);
+  }
+
   function renderGallery(photos) {
     var gallery = document.getElementById("gallery");
     gallery.innerHTML = "";
@@ -2627,6 +2639,7 @@
     initCountryPicker();
     initBulkCountry();
     initActiveFiltersBar();
+    initSiteModeBadge();
     initAdminLogin();
     initIncomingPicker();
     initIncomingPhotosPicker();

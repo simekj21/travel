@@ -87,11 +87,18 @@ body.site-mode-photo .topbar__actions {
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
+  border: none;
   border-radius: 999px;
+  font: inherit;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.site-mode-badge:hover {
+  opacity: 0.85;
 }
 
 .site-mode-badge[hidden] {
