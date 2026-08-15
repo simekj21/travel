@@ -852,6 +852,13 @@ body.site-mode-photo .topbar__actions {
 
 .lightbox__meta-btn--event {
   margin-left: auto;
+  color: rgba(255, 255, 255, 0.55);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.lightbox__meta-btn--country {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .lightbox__image {
