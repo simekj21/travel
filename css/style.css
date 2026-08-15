@@ -859,6 +859,7 @@ body.site-mode-photo .topbar__actions {
 .lightbox__meta-btn--country {
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  border-color: #fff;
 }
 
 .lightbox__image {
